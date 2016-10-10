@@ -48,13 +48,27 @@ pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 my $DomoticzHost = 'http://domoticz.example.com';
 
+=pod  Memory Usage %
+
+=cut
+
+my $MPU_IDX = 'Domoticz_device_idx';
 my $MemPercentUsed = qx`free | grep Mem | awk '{print \$3/\$2 * 100}'`;
 chomp $MemPercentUsed;
 
+=pod  HDD / Usage %
+
+=cut
+
+my $DPU_IDX = 'Domoticz_device_idx';
 my $diskdata = qx(df / | tail -1);
 $diskdata =~ s/ +/ /g;
 my @data = split / /, $diskdata;
 my $DiskPercentUsed = $data[2] / $data[1] * 100;
+
+=pod Main Program Logic
+
+=cut
 
 if ($debug) {
 	print "\n";
