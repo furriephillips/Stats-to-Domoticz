@@ -1,0 +1,70 @@
+#!/usr/bin/perl -w
+
+=head1 NAME
+
+Stats-to-Domoticz       Grab stats from the system & pass them on to Domoticz
+
+=head1 SYNOPSIS
+
+B<Stats-to-Domoticz> [options]
+
+Normal usage is without options (from crontab), using defaults within the script.
+
+Use 'B< --help>' or 'B< --man>' for more info.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--debug>
+
+Print debug info to screen.
+
+=item B<--help>
+
+Shows the help/usage message.
+
+=item B<--man>
+
+Shows the full documentation.
+
+=back
+
+=cut
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+
+my ($debug,$help,$man);
+
+GetOptions (
+	"debug"			=>	\$debug,
+	"help"			=>	\$help,
+	"man"			=>	\$man,
+) or pod2usage(2);
+pod2usage(1) if $help;
+pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+
+my $DomoticzHost = 'http://domoticz.example.com';
+
+my $MemPercentUsed = qx`free | grep Mem | awk '{print \$3/\$2 * 100}'`;
+chomp $MemPercentUsed;
+
+my $diskdata = qx(df / | tail -1);
+$diskdata =~ s/ +/ /g;
+my @data = split / /, $diskdata;
+my $DiskPercentUsed = $data[2] / $data[1] * 100;
+
+if ($debug) {
+	print "\n";
+	print "[1;36mMemPercentUsed:[1;33m $MemPercentUsed\n";
+	system("/bin/curl -s -X PUT \"$DomoticzHost/json.htm?type=command&param=udevice&idx=$MPU_IDX&nvalue=0&svalue=$MemPercentUsed\"");
+	print "[1;36mDiskPercentUsed:[1;33m $DiskPercentUsed\n";
+	system("/bin/curl -s -X PUT \"$DomoticzHost/json.htm?type=command&param=udevice&idx=$DPU_IDX&nvalue=0&svalue=$DiskPercentUsed\"");
+} else {
+	system("/bin/curl -s -X PUT \"$DomoticzHost/json.htm?type=command&param=udevice&idx=$MPU_IDX&nvalue=0&svalue=$MemPercentUsed\" 2>&1 >/dev/null");
+	system("/bin/curl -s -X PUT \"$DomoticzHost/json.htm?type=command&param=udevice&idx=$DPU_IDX&nvalue=0&svalue=$DiskPercentUsed\" 2>&1 >/dev/null");
+}
+
+#EOF
